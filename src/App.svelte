@@ -2,100 +2,66 @@
 	import P5Canvas from "./P5Canvas.svelte";
 
 	// colors exported from coolers.co
-	let colors = [{"name":"Blue Bell","hex":"a09ebb","rgb":[160,158,187],"cmyk":[14,16,0,27],"hsb":[244,16,73],"hsl":[244,18,68],"lab":[66,7,-15]},{"name":"Black Shadows","hex":"baa7b0","rgb":[186,167,176],"cmyk":[0,10,5,27],"hsb":[332,10,73],"hsl":[332,12,69],"lab":[70,8,-2]},{"name":"Illuminating Emerald","hex":"3c896d","rgb":[60,137,109],"cmyk":[56,0,20,46],"hsb":[158,56,54],"hsl":[158,39,39],"lab":[52,-31,8]},{"name":"Independence","hex":"4e4c67","rgb":[78,76,103],"cmyk":[24,26,0,60],"hsb":[244,26,40],"hsl":[244,15,35],"lab":[33,7,-15]},{"name":"Magic Mint","hex":"9df7e5","rgb":[157,247,229],"cmyk":[36,0,7,3],"hsb":[168,36,97],"hsl":[168,85,79],"lab":[91,-31,0]}];
+	let colors = [{"name":"Royal Blue Dark","hex":"0a1045","rgb":[10,16,69],"cmyk":[86,77,0,73],"hsb":[234,86,27],"hsl":[234,75,15],"lab":[8,19,-34]},{"name":"Dark Turquoise","hex":"00c2d1","rgb":[0,194,209],"cmyk":[100,7,0,18],"hsb":[184,100,82],"hsl":[184,100,41],"lab":[72,-35,-19]},{"name":"Middle Yellow","hex":"f9e900","rgb":[249,233,0],"cmyk":[0,6,100,2],"hsb":[56,100,98],"hsl":[56,100,49],"lab":[91,-13,90]},{"name":"Rajah","hex":"f6af65","rgb":[246,175,101],"cmyk":[0,29,59,4],"hsb":[31,59,96],"hsl":[31,89,68],"lab":[77,18,48]},{"name":"Shocking Pink","hex":"ed33b9","rgb":[237,51,185],"cmyk":[0,78,22,7],"hsb":[317,78,93],"hsl":[317,84,56],"lab":[56,79,-28]}]
 	//let colors = [{"name":"Tea Green","hex":"c8ffbe","rgb":[200,255,190],"cmyk":[22,0,25,0],"hsb":[111,25,100],"hsl":[111,100,87],"lab":[95,-29,26]},{"name":"Indigo Dye","hex":"083d77","rgb":[8,61,119],"cmyk":[93,49,0,53],"hsb":[211,93,47],"hsl":[211,87,25],"lab":[26,8,-38]},{"name":"Spanish Pink","hex":"fcbcb8","rgb":[252,188,184],"cmyk":[0,25,27,1],"hsb":[4,27,99],"hsl":[4,92,85],"lab":[82,22,11]},{"name":"Pastel Pink","hex":"efa7a7","rgb":[239,167,167],"cmyk":[0,30,30,6],"hsb":[0,30,94],"hsl":[0,69,80],"lab":[75,27,11]},{"name":"Maximum Blue Green","hex":"43bccd","rgb":[67,188,205],"cmyk":[67,8,0,20],"hsb":[187,67,80],"hsl":[187,58,53],"lab":[71,-28,-18]}];
 
 	let sketch = function (p5) {
 		let windowWidth = window.innerWidth;
 		let windowHeight = window.innerHeight;
-		let w;
+		let rowHeight;
 		let columns;
 		let rows;
-		let board;
-		let next;
 		let offset = 0; 
-		let fr = 2; //framerate
+		let fr = 30; //framerate
+		let magnitude = windowWidth * 0.5;
 
-		let getColor = (i, j, neighbors) => {
-			let initialColor = colors[0];
-			if (neighbors > 2 && neighbors < 5) initialColor = colors[1];
-			if (neighbors > 4 && neighbors < 6) initialColor = colors[2];
-			if (neighbors > 5 && neighbors < 8) initialColor = colors[3];
-			if (neighbors > 7) initialColor = colors[4];
-			return `rgba(${initialColor.rgb[0]}, ${initialColor.rgb[1]}, ${initialColor.rgb[2]}, ${(board[i][j].magnitude)/10})`;
-			//return `rgba(${((i * j)+adjustedOffset) % 255}, ${(i * (2 * j)) % 255}, ${	(2 * i * j) % 255}, ${i * j * Math.random()})`;
-		};
-		let getBackgroundColor = () => {
-			let color = colors[4];
-			return `rgba(${color.rgb[0]}, ${color.rgb[2]}, ${color.rgb[1]}, 0.5)`;
-		}
-		let getNeighborsNumber = (i, j) => {
-			if (board[i][j].alive == 1) {
-				let output = 0;
-				if (board[i + 1][j].alive == 1) output++;
-				if (board[i - 1][j].alive == 1) output++;
-				if (board[i][j - 1].alive == 1) output++;
-				if (board[i][j + 1].alive == 1) output++;
-				if (board[i + 1][j + 1].alive == 1) output++;
-				if (board[i - 1][j + 1].alive == 1) output++;
-				if (board[i + 1][j - 1].alive == 1) output++;
-				if (board[i - 1][j - 1].alive == 1) output++;
-				return output;
-			} else {
-				// if it's an empty slot who cares
-				return 0;
-			}
-		};
-
-		let getLocalMagnitude = (x,y) => {
-			let out = 0;
-			out += board[x-1][y].magnitude;
-			out += board[x+1][y].magnitude;
-			out += board[x-1][y+1].magnitude;
-			out += board[x-1][y-1].magnitude;
-			out += board[x+1][y+1].magnitude;
-			out += board[x+1][y-1].magnitude;
-			out += board[x][y+1].magnitude;
-			out += board[x][y-1].magnitude;
-			return out;
-		}
 
 		p5.setup = () => {
 			p5.frameRate(fr);
 			p5.createCanvas(windowWidth, windowHeight);
-			w = 25;
-			// Calculate columns and rows
-			columns = p5.floor(p5.width / w);
-			rows = p5.floor(p5.height / w);
-			// Wacky way to make a 2D array is JS
-			board = new Array(columns);
-			for (let i = 0; i < columns; i++) {
-				board[i] = new Array(rows);
+			rowHeight = 50;
+			rows = [];
+			// lets divide the screen into rows
+			for(let i = 0; i < p5.floor(windowHeight/rowHeight); i++) {
+				rows.push({value: 0, color: colors[0]});
 			}
-			// Going to use multiple 2D arrays and swap them
-			next = new Array(columns);
-			for (let i = 0; i < columns; i++) {
-				next[i] = new Array(rows);
-			}
+			rows = new Array(p5.floor(windowHeight/rowHeight));
+
 			p5.init();
 		};
 
 		p5.draw = () => {
-			p5.background(getBackgroundColor());
+			p5.background(...colors[0].rgb);
 			p5.generate();
-			for (let i = 0; i < columns; i++) {
-				offset = (offset + 1) % (p5.width / w);
-				for (let j = 0; j < rows; j++) {
-					if (board[i][j].alive == 1) {
-						let neighbors = getNeighborsNumber(i,j); // between 0 and 8
-						p5.fill(getColor(i, j, neighbors));
-						p5.strokeWeight(0);
-						p5.circle((i * w)+offset, j * w, 
-					 		((board[i][j].magnitude + 1) * 10)
-						);
-					}
-				}
+			for(let i = 0; i < rows.length; i++) {
+				p5.stroke(...rows[i].color.rgb);
+				// p5.strokeWeight(10);
+				// p5.line(
+				// 	(10 + (p5.abs(offset - i)) % windowWidth), 
+				// 	p5.floor(i*rowHeight), 
+				// 	p5.floor(rows[i].value), 
+				// 	p5.floor(i*rowHeight)
+				// );
+				// p5.strokeWeight(2);
+				// p5.stroke(rows[i].color.rgb);
+				// p5.fill([...rows[i].color.rgb, 0.5]);
+				// p5.rect(
+				// 	(10 + (p5.abs(offset - i)) % windowWidth) - (rows[i].value * 0.5), 
+				// 	p5.floor(i*rowHeight), 
+				// 	p5.floor(rows[i].value), 
+				// 	p5.floor((i*rowHeight/20) + ((rows[i].value - offset)) )
+				// );
+				p5.strokeWeight(2);
+				p5.stroke(rows[i].color.rgb);
+				p5.fill([...rows[i].color.rgb]);
+				p5.rect(
+					p5.floor(i*rowHeight - 10), 
+					p5.floor(rows[i].value), 
+					((p5.abs(offset - i)) % windowWidth) - 50,
+					p5.floor((i*rowHeight/200) + ((rows[i].value - offset)) )
+				);
 			}
+			
 		};
 
 		// reset board when mouse is pressed
@@ -103,65 +69,25 @@
 			p5.init();
 		};
 
-		// Fill board randomly
+		
 		p5.init = () => {
-			for (let i = 0; i < columns; i++) {
-				for (let j = 0; j < rows; j++) {
-					// Lining the edges with 0s
-					if (i == 0 || j == 0 || i == columns - 1 || j == rows - 1)
-						board[i][j] = {
-							alive: 0,
-							magnitude: 0,
-						};
-					// Filling the rest randomly
-					else
-						board[i][j] = {
-							alive: p5.floor(p5.random(2)),
-							magnitude: p5.floor(p5.random(10)),
-						};
-					next[i][j] = {
-						alive: 0,
-						magnitude: 0,
-					};
-				}
+			for(let i = 0; i < rows.length; i++) {
+				rows[i] = {
+					value: 10 + p5.abs((magnitude + (windowHeight - (i*rowHeight)) ) * p5.sin((10*p5.TWO_PI)/(i + 20))),
+					color: colors[i%4]
+				};
 			}
-			
 		};
 
 		// The process of creating the new generation
 		p5.generate = () => {
-			// Loop through every spot in our 2D array and check spots neighbors
-			for (let x = 1; x < columns - 1; x++) {
-				for (let y = 1; y < rows - 1; y++) {
-					// Add up all the states in a 3x3 surrounding grid
-					let neighbors = getNeighborsNumber(x, y);
-					let localMagnitude = getLocalMagnitude(x, y);
-					// Rules of Life
-					if (board[x][y].alive == 1) {
-						next[x][y] = {
-							alive: (p5.random(11) < (3 + neighbors)) ? 1 : 0, //(p5.floor(p5.random(0,10)) > 3) ? 1 : 0, // chance to kill if alive
-							magnitude: neighbors+p5.random(0, 3),
-						};
-					} else if (board[x][y].alive == 0 && neighbors >= 2 && ((p5.random(10) + localMagnitude) > 20)) {
-						next[x][y] = {
-							alive: 1,
-							magnitude: localMagnitude/8 + p5.random(0, 3),
-						};
-					} else if (board[x][y].alive == 0 && ((p5.random(30) + localMagnitude > 55) || (p5.random(30) > 28))  ) {
-						next[x][y] = {
-							alive: 1,
-							magnitude: 1,
-						};
-					} else {
-						next[x][y] = board[x][y]; // Stasis
-					}
+			offset = (offset + 1) % windowWidth;
+			rows = rows.map((r, i) => {
+				return {
+					value: 10 + p5.abs((magnitude + (windowHeight - (i*rowHeight)) ) * p5.sin((10 * p5.TWO_PI+ offset)/ (i + 20))),
+					color: colors[(i)%4]
 				}
-			}
-
-			// Swap!
-			let temp = board;
-			board = next;
-			next = temp;
+			})
 		};
 	};
 </script>
@@ -175,11 +101,5 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-	}
-
-	@media (min-width: 640px) {
-		main {
-			max-width: none;
-		}
 	}
 </style>
