@@ -1,4 +1,6 @@
 <script>
+import { sign } from "crypto";
+
 	import P5Canvas from "./P5Canvas.svelte";
 
 	// colors exported from coolers.co
@@ -8,59 +10,76 @@
 	let sketch = function (p5) {
 		let windowWidth = window.innerWidth;
 		let windowHeight = window.innerHeight;
-		let rowHeight;
-		let columns;
-		let rows;
 		let offset = 0; 
-		let fr = 30; //framerate
+		let fr = 12
+		; //framerate
 		let magnitude = windowWidth * 0.5;
 
 
 		p5.setup = () => {
 			p5.frameRate(fr);
 			p5.createCanvas(windowWidth, windowHeight);
-			rowHeight = 50;
-			rows = [];
-			// lets divide the screen into rows
-			for(let i = 0; i < p5.floor(windowHeight/rowHeight); i++) {
-				rows.push({value: 0, color: colors[0]});
-			}
-			rows = new Array(p5.floor(windowHeight/rowHeight));
-
 			p5.init();
 		};
 
 		p5.draw = () => {
-			p5.background(...colors[0].rgb);
+			p5.background(colors[0].rgb);
 			p5.generate();
-			for(let i = 0; i < rows.length; i++) {
-				p5.stroke(...rows[i].color.rgb);
-				// p5.strokeWeight(10);
-				// p5.line(
-				// 	(10 + (p5.abs(offset - i)) % windowWidth), 
-				// 	p5.floor(i*rowHeight), 
-				// 	p5.floor(rows[i].value), 
-				// 	p5.floor(i*rowHeight)
-				// );
-				// p5.strokeWeight(2);
-				// p5.stroke(rows[i].color.rgb);
-				// p5.fill([...rows[i].color.rgb, 0.5]);
-				// p5.rect(
-				// 	(10 + (p5.abs(offset - i)) % windowWidth) - (rows[i].value * 0.5), 
-				// 	p5.floor(i*rowHeight), 
-				// 	p5.floor(rows[i].value), 
-				// 	p5.floor((i*rowHeight/20) + ((rows[i].value - offset)) )
-				// );
-				p5.strokeWeight(2);
-				p5.stroke(rows[i].color.rgb);
-				p5.fill([...rows[i].color.rgb]);
-				p5.rect(
-					p5.floor(i*rowHeight - 10), 
-					p5.floor(rows[i].value), 
-					((p5.abs(offset - i)) % windowWidth) - 50,
-					p5.floor((i*rowHeight/200) + ((rows[i].value - offset)) )
-				);
+			if (p5.frameCount % 480) offset ++;
+			let radius = 100;
+			let centerX = radius*p5.cos(offset/16) + (windowWidth/2);
+			centerX = (centerX + p5.mouseX)/2;
+			let centerY = radius*p5.sin(offset/16) + (windowHeight/2);
+			centerY = (centerY + p5.mouseY)/2;
+			let slopeDiff = ((windowWidth/2) - centerX) * (10/25);
+			
+			let rowHeight = 20;
+			for (let i = -100; i < windowHeight +100; i++) {
+				if (i < centerY) {
+					p5.strokeWeight(1);
+					p5.stroke(colors[2].rgb);
+					if ((i + offset)%(rowHeight) == 0) {
+						p5.line(0, i-slopeDiff, windowWidth, i+slopeDiff);
+					}
+				} else {
+					p5.strokeWeight(1);
+					p5.stroke(colors[1].rgb);
+					if ((i - offset)%(rowHeight+(offset % 10)) == 0) {
+						p5.line(0, i-slopeDiff, windowWidth, i+slopeDiff);
+					}
+					
+					
+				}
 			}
+
+			let mouseXBuffer = 75;
+			p5.stroke(colors[3].rgb);
+			p5.fill(`rgba(${colors[3].rgb[0]},${colors[3].rgb[1]},${colors[3].rgb[2]},0.25)`);
+			for (let i = -100; i < windowWidth + 100; i++) {
+				if (i < (centerX - mouseXBuffer)) {
+					if ((i+offset) % p5.floor(mouseXBuffer + 0.1*p5.abs(i- centerX)) == 0) {
+						p5.rect(
+							0, 0,
+							i, centerY + mouseXBuffer + 0.33*p5.abs(i-(centerX-slopeDiff))
+						)
+					}
+				} else if (i > centerX + mouseXBuffer) {
+					if ((i-offset) % p5.floor(mouseXBuffer + 0.1*p5.abs(i- centerX)) == 0) {
+						p5.rect(
+							i, 0,
+							windowWidth, centerY + mouseXBuffer + 0.33*p5.abs(i-(centerX-slopeDiff)),
+						)
+					}
+				} else {
+
+				}
+			}
+			
+			
+			
+
+			
+			
 			
 		};
 
@@ -71,28 +90,17 @@
 
 		
 		p5.init = () => {
-			for(let i = 0; i < rows.length; i++) {
-				rows[i] = {
-					value: 10 + p5.abs((magnitude + (windowHeight - (i*rowHeight)) ) * p5.sin((10*p5.TWO_PI)/(i + 20))),
-					color: colors[i%4]
-				};
-			}
 		};
 
 		// The process of creating the new generation
 		p5.generate = () => {
-			offset = (offset + 1) % windowWidth;
-			rows = rows.map((r, i) => {
-				return {
-					value: 10 + p5.abs((magnitude + (windowHeight - (i*rowHeight)) ) * p5.sin((10 * p5.TWO_PI+ offset)/ (i + 20))),
-					color: colors[(i)%4]
-				}
-			})
+			
 		};
 	};
 </script>
 
 <main>
+	<h1>sup dude</h1>
 	<P5Canvas {sketch} />
 </main>
 
@@ -101,5 +109,10 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+	}
+	h1 {
+		position: absolute;
+		top: 1rem;
+		left: 2rem;
 	}
 </style>
